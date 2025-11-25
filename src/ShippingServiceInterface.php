@@ -4,6 +4,7 @@ namespace App;
 
 use App\Data\AbstractOrder;
 use App\Data\BuyerInterface;
+use \RuntimeException;
 
 interface ShippingServiceInterface
 {
