@@ -1,0 +1,212 @@
+openapi: 3.0.0
+info:
+  title: Amazon FBA Shipping Service API
+  description: A simple integration service to forward orders to Amazon FBA and retrieve tracking.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local Development Server
+
+paths:
+  /api/ship:
+    post:
+      summary: Ship an order via FBA
+      description: Creates a fulfillment order in Amazon's system using the provided order and buyer details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipRequest'
+      responses:
+        '200':
+          description: Order successfully queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      fulfillment_id:
+                        type: string
+                        example: "191507268019"
+                      message:
+                        type: string
+                        example: "Order queued for fulfillment"
+        '400':
+          description: Invalid input or missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error or Upstream API Failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tracking:
+    get:
+      summary: Get Tracking Information
+      description: Checks the status of a fulfillment order and returns the tracking number if available.
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: string
+          required: true
+          description: The Order Unique ID (SellerFulfillmentOrderId)
+          example: "191507268019"
+      responses:
+        '200':
+          description: Tracking status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      fulfillment_id:
+                        type: string
+                      tracking_number:
+                        type: string
+                        nullable: true
+                        example: "1Z999AA10123456784"
+                      state:
+                        type: string
+                        enum: [SHIPPED, PROCESSING]
+                        example: SHIPPED
+        '404':
+          description: Endpoint not found
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ShipRequest:
+      type: object
+      required:
+        - order
+        - buyer
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        buyer:
+          $ref: '#/components/schemas/Buyer'
+
+    Buyer:
+      type: object
+      properties:
+        country_id:
+          type: string
+          example: "236"
+        country_code:
+          type: string
+          example: "US"
+        country_code3:
+          type: string
+          example: "USA"
+        shop_username:
+          type: string
+          example: "buyer"
+        email:
+          type: string
+          format: email
+          example: "buyer@test.com"
+        phone:
+          type: string
+          example: "123 456 7890"
+        address:
+          type: string
+          example: "Bfirstname Blastname\n25 buyer Rd\nLock Haven\nPA\n17745 United States\n\n"
+
+    Order:
+      type: object
+      required:
+        - order_id
+        - order_unique
+        - products
+        - shipping_street
+        - shipping_city
+        - shipping_country
+      properties:
+        order_id:
+          type: string
+          example: "16400"
+        order_unique:
+          type: string
+          description: Unique identifier for the Fulfillment Order
+          example: "191507268019"
+        buyer_name:
+          type: string
+          example: "Firstname Lastname"
+        order_date:
+          type: string
+          format: date
+          example: "2015-04-14"
+        comments:
+          type: string
+          example: "Could you please make the Red Garnet ring a size 10.5 ????"
+        shipping_street:
+          type: string
+          example: "12 Test R"
+        shipping_city:
+          type: string
+          example: "Lock Haven"
+        shipping_state:
+          type: string
+          example: "PA"
+        shipping_zip:
+          type: string
+          example: "17745"
+        shipping_country:
+          type: string
+          example: "US"
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+
+    Product:
+      type: object
+      required:
+        - product_code
+        - order_product_id
+        - ammount
+      properties:
+        product_code:
+          type: string
+          description: The Seller SKU
+          example: "RIMN02SGR-10"
+        order_product_id:
+          type: string
+          example: "18770"
+        ammount:
+          type: string
+          description: Quantity of the item (Note the spelling match with source system)
+          example: "1"
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: "Missing order in request payload"
