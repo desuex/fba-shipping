@@ -1,4 +1,7 @@
 {
+    "name": "desuex/fba-shipping",
+    "description": "Amazon FBA Shipping Service Implementation",
+    "license": "MIT",
     "require": {
         "guzzlehttp/guzzle": "^7.0"
     },
